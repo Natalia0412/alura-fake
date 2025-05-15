@@ -1,5 +1,6 @@
 package br.com.alura.AluraFake.util;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -7,6 +8,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
+import java.time.Instant;
 import java.util.List;
 
 @ControllerAdvice
@@ -18,4 +20,16 @@ public class ValidationExceptionHandler {
         List<ErrorItemDTO> errors = ex.getBindingResult().getFieldErrors().stream().map(ErrorItemDTO::new).toList();
         return ResponseEntity.badRequest().body(errors);
     }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseError resourceNotFoundException(ResourceNotFoundException ex, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.NOT_FOUND;
+        return ResponseError.builder()
+                .timestamp(Instant.now())
+                .status(status.value())
+                .errors(List.of(ErrorMsg.builder().message(ex.getMessage()).build()))
+                .path(request.getRequestURI())
+                .build();
+    }
+
 }
