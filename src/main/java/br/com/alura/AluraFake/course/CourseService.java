@@ -1,6 +1,6 @@
 package br.com.alura.AluraFake.course;
 
-import br.com.alura.AluraFake.util.ResourceNotFoundException;
+import br.com.alura.AluraFake.util.error.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

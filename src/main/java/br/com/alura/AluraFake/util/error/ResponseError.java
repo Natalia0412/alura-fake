@@ -1,5 +1,6 @@
-package br.com.alura.AluraFake.util;
+package br.com.alura.AluraFake.util.error;
 
+import br.com.alura.AluraFake.util.error.ErrorMsg;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

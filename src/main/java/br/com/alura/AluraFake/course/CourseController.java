@@ -1,7 +1,7 @@
 package br.com.alura.AluraFake.course;
 
 import br.com.alura.AluraFake.user.*;
-import br.com.alura.AluraFake.util.ErrorItemDTO;
+import br.com.alura.AluraFake.util.error.ErrorItemDTO;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
