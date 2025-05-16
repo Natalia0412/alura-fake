@@ -9,14 +9,13 @@ import br.com.alura.AluraFake.task.dto.SingleChoiceTaskDTO;
 import br.com.alura.AluraFake.user.User;
 import br.com.alura.AluraFake.util.error.ResourceIllegalArgumentException;
 import br.com.alura.AluraFake.util.error.ResourceIllegalStateException;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -41,42 +40,54 @@ public class TaskServiceTest {
     @Mock
     private TaskMapper taskMapper;
 
-//    @BeforeEach
-//    void setUp() {
-//        MockitoAnnotations.openMocks(this);
-//        Course course = new Course();
-//        course.setStatus(Status.BUILDING);
-//    }
+
+    private Course buildCourse(Status status) {
+        User instructor = mock(User.class);
+        when(instructor.isInstructor()).thenReturn(true);
+        Course course = new Course("Java", "desc", instructor);
+        course.setStatus(status);
+        return course;
+    }
+
+    private List<OptionDTO> options(String... texts) {
+        return Arrays.stream(texts)
+                .map(text -> new OptionDTO(text, false))
+                .toList();
+    }
+
+    private List<OptionDTO> optionsWithCorrect(String correct, String... incorrect) {
+        List<OptionDTO> list = new ArrayList<>();
+        list.add(new OptionDTO(correct, true));
+        for (String i : incorrect) {
+            list.add(new OptionDTO(i, false));
+        }
+        return list;
+    }
+
+    private void mockCourseLookup(Long courseId, Course course) {
+        when(courseService.findCourseById(courseId)).thenReturn(course);
+        when(taskRepository.findByCourseOrderByOrder(course)).thenReturn(Collections.emptyList());
+    }
 
     @Test
     void shouldInsertTaskAtTheEndSuccessfully() {
-        User instructor = mock(User.class);
-        when(instructor.isInstructor()).thenReturn(true);
-
-        Course course = new Course("Java", "Descrição", instructor);
-        course.setStatus(Status.BUILDING);
-
+        Course course = buildCourse(Status.BUILDING);
         OpenTextTaskDTO dto = new OpenTextTaskDTO(1L, "O que é Java?", 1);
-
         Task taskEntity = Task.builder()
                 .statement(dto.statement())
                 .order(dto.order())
                 .course(course)
                 .type(Type.OPEN_TEXT)
                 .build();
-
         OpenTextTaskDTO expectedDto = new OpenTextTaskDTO(1L, "O que é Java?", 1);
 
-        // Act
-        when(courseService.findCourseById(dto.courseId())).thenReturn(course);
-        when(taskRepository.findByCourseOrderByOrder(course)).thenReturn(Collections.emptyList());
+        mockCourseLookup(dto.courseId(), course);
         when(taskMapper.toTask(dto)).thenReturn(taskEntity);
         when(taskRepository.save(taskEntity)).thenReturn(taskEntity);
         when(taskMapper.toDto(taskEntity)).thenReturn(expectedDto);
 
         OpenTextTaskDTO result = taskService.createOpenTextTask(dto);
 
-        // Assert
         assertEquals(expectedDto.statement(), result.statement());
         assertEquals(expectedDto.order(), result.order());
 
@@ -87,58 +98,26 @@ public class TaskServiceTest {
 
     @Test
     void shouldThrowException_whenStatementIsDuplicatedInSameCourse() {
-        // Arrange
-        Long courseId = 1L;
+        Course course = buildCourse(Status.BUILDING);
         String duplicatedStatement = "Explique o que é uma classe em Java.";
+        OpenTextTaskDTO dto = new OpenTextTaskDTO(1L, duplicatedStatement, 1);
 
-        User instructor = mock(User.class);
-        when(instructor.isInstructor()).thenReturn(true);
-
-        Course course = new Course("Java", "descrição", instructor);
-        course.setStatus(Status.BUILDING);
-
-        Task existingTask = Task.builder()
-                .statement(duplicatedStatement)
-                .order(1)
-                .course(course)
-                .type(Type.OPEN_TEXT)
-                .build();
-
-        OpenTextTaskDTO dto = new OpenTextTaskDTO(courseId, duplicatedStatement, 2);
-
-        when(courseService.findCourseById(dto.courseId())).thenReturn(course);
-        when(taskRepository.findByCourseOrderByOrder(course)).thenReturn(List.of(existingTask));
+        mockCourseLookup(dto.courseId(), course);
         when(taskRepository.existsByCourseAndStatement(course, duplicatedStatement)).thenReturn(true);
 
-        // Act + Assert
         assertThatThrownBy(() -> taskService.createOpenTextTask(dto))
                 .isInstanceOf(ResourceIllegalArgumentException.class)
                 .hasMessageContaining("Já existe uma atividade com esse enunciado para o curso.");
     }
 
-
     @Test
     void shouldThrowException_whenOrderSkipsSequence() {
-        User instructor = mock(User.class);
-        when(instructor.isInstructor()).thenReturn(true);
-        Long courseId = 1L;
-        Course course = new Course("Java", "desc", instructor);
-        course.setStatus(Status.BUILDING);
-
-        // Suponha que já exista 1 tarefa na ordem 1
-        Task existingTask = Task.builder()
-                .id(10L)
-                .statement("Tarefa existente")
-                .order(1)
-                .course(course)
-                .type(Type.OPEN_TEXT)
-                .build();
-
-        when(courseService.findCourseById(courseId)).thenReturn(course);
+        Course course = buildCourse(Status.BUILDING);
+        Task existingTask = Task.builder().id(10L).statement("Tarefa existente").order(1).course(course).type(Type.OPEN_TEXT).build();
+        when(courseService.findCourseById(1L)).thenReturn(course);
         when(taskRepository.findByCourseOrderByOrder(course)).thenReturn(List.of(existingTask));
 
-        // Tenta inserir direto na ordem 3 (pulo do 2)
-        OpenTextTaskDTO dto = new OpenTextTaskDTO(courseId, "O que é polimorfismo?", 3);
+        OpenTextTaskDTO dto = new OpenTextTaskDTO(1L, "O que é polimorfismo?", 3);
 
         assertThatThrownBy(() -> taskService.createOpenTextTask(dto))
                 .isInstanceOf(ResourceIllegalArgumentException.class)
@@ -147,40 +126,26 @@ public class TaskServiceTest {
 
     @Test
     void shouldThrowException_whenStatusNotBuilding() {
-        User instructor = mock(User.class);
-        when(instructor.isInstructor()).thenReturn(true);
-        Long courseId = 1L;
-        Course course = new Course("Java", "desc", instructor);
-        course.setStatus(Status.PUBLISHED);
-
-        OpenTextTaskDTO dto = new OpenTextTaskDTO(courseId, "O que é polimorfismo?", 1);
+        Course course = buildCourse(Status.PUBLISHED);
+        OpenTextTaskDTO dto = new OpenTextTaskDTO(1L, "O que é polimorfismo?", 1);
         when(courseService.findCourseById(dto.courseId())).thenReturn(course);
-
 
         assertThatThrownBy(() -> taskService.createOpenTextTask(dto))
                 .isInstanceOf(ResourceIllegalStateException.class)
                 .hasMessageContaining("Curso precisa estar com status BUILDING");
-
     }
 
     @Test
-    void shouldThrowException_whenMoreThanOneCorrectOption(){
-        User instructor = mock(User.class);
-        when(instructor.isInstructor()).thenReturn(true);
-        Long courseId = 1L;
-        Course course = new Course("Java", "desc", instructor);
-        course.setStatus(Status.BUILDING);
-
+    void shouldThrowException_whenMoreThanOneCorrectOption() {
+        Course course = buildCourse(Status.BUILDING);
         List<OptionDTO> options = Arrays.asList(
                 new OptionDTO("Java", true),
                 new OptionDTO("Python", true)
         );
+        SingleChoiceTaskDTO dto = new SingleChoiceTaskDTO(1L, "Qual linguagem?", 1, options);
 
-        SingleChoiceTaskDTO dto = new SingleChoiceTaskDTO(courseId, "Qual linguagem?", 1, options);
-
-        when(courseService.findCourseById(courseId)).thenReturn(course);
-        when(taskRepository.findByCourseOrderByOrder(course)).thenReturn(Collections.emptyList());
-        when(taskRepository.existsByCourseAndStatement(course, "Qual linguagem?")).thenReturn(false);
+        mockCourseLookup(dto.courseId(), course);
+        when(taskRepository.existsByCourseAndStatement(course, dto.statement())).thenReturn(false);
 
         assertThatThrownBy(() -> taskService.createSingleChoiceTask(dto))
                 .isInstanceOf(ResourceIllegalArgumentException.class)
@@ -189,68 +154,90 @@ public class TaskServiceTest {
 
     @Test
     void shouldThrowException_whenOptionsAreDuplicated() {
-        User instructor = mock(User.class);
-        when(instructor.isInstructor()).thenReturn(true);
-        Long courseId = 1L;
-        Course course = new Course("Java", "desc", instructor);
-        course.setStatus(Status.BUILDING);
-
+        Course course = buildCourse(Status.BUILDING);
         List<OptionDTO> options = Arrays.asList(
                 new OptionDTO("Java", true),
                 new OptionDTO("Java", false)
         );
+        SingleChoiceTaskDTO dto = new SingleChoiceTaskDTO(1L, "Qual linguagem?", 1, options);
 
-        SingleChoiceTaskDTO dto = new SingleChoiceTaskDTO(courseId, "Qual linguagem?", 1, options);
-        when(courseService.findCourseById(courseId)).thenReturn(course);
-        when(taskRepository.findByCourseOrderByOrder(course)).thenReturn(Collections.emptyList());
-        when(taskRepository.existsByCourseAndStatement(course, "Qual linguagem?")).thenReturn(false);
+        mockCourseLookup(dto.courseId(), course);
+        when(taskRepository.existsByCourseAndStatement(course, dto.statement())).thenReturn(false);
 
         assertThatThrownBy(() -> taskService.createSingleChoiceTask(dto))
                 .isInstanceOf(ResourceIllegalArgumentException.class)
-                .hasMessageContaining("não podem ser repetidas");
+                .hasMessageContaining("As alternativas não podem ser repetidas.");
     }
 
     @Test
     void shouldThrowException_whenOptionEqualsStatement() {
-        User instructor = mock(User.class);
-        when(instructor.isInstructor()).thenReturn(true);
-        Long courseId = 1L;
-        Course course = new Course("Java", "desc", instructor);
-        course.setStatus(Status.BUILDING);
-
-        List<OptionDTO> options = Arrays.asList(
-                new OptionDTO("Qual linguagem?", true),
-                new OptionDTO("Python", false)
-        );
+        Course course = buildCourse(Status.BUILDING);
+        List<OptionDTO> options = optionsWithCorrect("Qual linguagem?", "Python");
         SingleChoiceTaskDTO dto = new SingleChoiceTaskDTO(1L, "Qual linguagem?", 1, options);
 
-        when(courseService.findCourseById(1L)).thenReturn(course);
-        when(taskRepository.findByCourseOrderByOrder(course)).thenReturn(Collections.emptyList());
-        when(taskRepository.existsByCourseAndStatement(course, "Qual linguagem?")).thenReturn(false);
+        mockCourseLookup(dto.courseId(), course);
+        when(taskRepository.existsByCourseAndStatement(course, dto.statement())).thenReturn(false);
 
         assertThatThrownBy(() -> taskService.createSingleChoiceTask(dto))
                 .isInstanceOf(ResourceIllegalArgumentException.class)
-                .hasMessageContaining("igual ao enunciado");
+                .hasMessageContaining("Nenhuma alternativa pode ser igual ao enunciado da atividade.");
     }
 
     @Test
     void shouldThrowException_whenCourseNotBuilding() {
-        User instructor = mock(User.class);
-        when(instructor.isInstructor()).thenReturn(true);
-        Long courseId = 1L;
-        Course course = new Course("Java", "desc", instructor);
-        course.setStatus(Status.PUBLISHED);
-
-        List<OptionDTO> options = Arrays.asList(
-                new OptionDTO("Java", true),
-                new OptionDTO("Python", false)
-        );
+        Course course = buildCourse(Status.PUBLISHED);
+        List<OptionDTO> options = optionsWithCorrect("Java", "Python");
         SingleChoiceTaskDTO dto = new SingleChoiceTaskDTO(1L, "Qual linguagem?", 1, options);
 
-        when(courseService.findCourseById(1L)).thenReturn(course);
+        when(courseService.findCourseById(dto.courseId())).thenReturn(course);
 
         assertThatThrownBy(() -> taskService.createSingleChoiceTask(dto))
                 .isInstanceOf(ResourceIllegalStateException.class)
                 .hasMessageContaining("status BUILDING");
     }
+
+    @Test
+    void shouldCreateSingleChoiceTaskSuccessfully() {
+        Course course = buildCourse(Status.BUILDING);
+        Long courseId = 1L;
+        String statement = "Qual dessas é uma linguagem de programação?";
+        int order = 1;
+
+        List<OptionDTO> options = Arrays.asList(
+                new OptionDTO("Java", true),
+                new OptionDTO("Banana", false),
+                new OptionDTO("Maça", false)
+        );
+
+        SingleChoiceTaskDTO dto = new SingleChoiceTaskDTO(courseId, statement, order, options);
+
+        Task mappedTask = Task.builder()
+                .statement(statement)
+                .order(order)
+                .type(Type.SINGLE_CHOICE)
+                .course(course)
+                .build();
+
+        when(courseService.findCourseById(courseId)).thenReturn(course);
+        when(taskRepository.findByCourseOrderByOrder(course)).thenReturn(Collections.emptyList());
+        when(taskRepository.existsByCourseAndStatement(course, statement)).thenReturn(false);
+        when(taskMapper.singleDtoToTask(dto)).thenReturn(mappedTask);
+        when(taskRepository.save(any(Task.class))).thenReturn(mappedTask);
+        when(taskMapper.toSingDto(mappedTask)).thenReturn(dto);
+
+        // Act
+        SingleChoiceTaskDTO result = taskService.createSingleChoiceTask(dto);
+
+        // Assert
+        assertEquals(dto.statement(), result.statement());
+        assertEquals(dto.order(), result.order());
+        assertEquals(dto.options().size(), result.options().size());
+
+        verify(courseService).findCourseById(courseId);
+        verify(taskRepository, times(2)).findByCourseOrderByOrder(course); // corrigido aqui
+        verify(taskRepository).save(any(Task.class));
+        verify(taskMapper).singleDtoToTask(dto);
+        verify(taskMapper).toSingDto(mappedTask);
+    }
+
 }
