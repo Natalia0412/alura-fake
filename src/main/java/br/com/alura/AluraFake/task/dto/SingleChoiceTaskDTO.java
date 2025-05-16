@@ -20,7 +20,7 @@ public record SingleChoiceTaskDTO(
         @Positive(message = "A ordem deve ser um número positivo")
         Integer order,
 
-        @Size(min = 2, max = 5, message = "Deve haver no mínimo duas opções")
+        @Size(min = 2, max = 5, message = "Deve haver no mínimo 2 e no maximo 6 opções")
         List<@Valid OptionDTO> options
 ) {
 

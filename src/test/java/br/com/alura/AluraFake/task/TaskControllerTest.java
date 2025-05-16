@@ -142,5 +142,40 @@ public class TaskControllerTest {
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isCreated());
     }
+    @Test
+    void shouldReturn400_whenSinglechoiceOptionsLessThanTwo() throws Exception {
+        List<OptionDTO> options = List.of(
+                new OptionDTO("Java", true)
+        );
+
+        SingleChoiceTaskDTO dto = new SingleChoiceTaskDTO(1L, "Qual linguagem?", 1, options);
+
+        mockMvc.perform(post("/task/new/singlechoice")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].message").value("options: Deve haver no mínimo 2 e no maximo 6 opções"));
+    }
+
+    @Test
+    void shouldReturn400_whenSinglechoiceOptionsMoreThanFive() throws Exception {
+        List<OptionDTO> options = Arrays.asList(
+                new OptionDTO("Azure", false),
+                new OptionDTO("Sql Serve", false),
+                new OptionDTO("Mysql", false),
+                new OptionDTO("Oracle", false),
+                new OptionDTO("Google", false),
+                new OptionDTO("Golang", true)
+        );
+
+        SingleChoiceTaskDTO dto = new SingleChoiceTaskDTO(1L, "Qual linguagem ?", 1, options);
+
+        mockMvc.perform(post("/task/new/singlechoice")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].message").value("options: Deve haver no mínimo 2 e no maximo 6 opções"));
+    }
+
 
 }

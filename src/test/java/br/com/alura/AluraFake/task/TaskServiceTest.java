@@ -149,7 +149,7 @@ public class TaskServiceTest {
 
         assertThatThrownBy(() -> taskService.createSingleChoiceTask(dto))
                 .isInstanceOf(ResourceIllegalArgumentException.class)
-                .hasMessageContaining("exatamente uma opção correta");
+                .hasMessageContaining("Deve haver exatamente uma opção correta.");
     }
 
     @Test
@@ -193,7 +193,7 @@ public class TaskServiceTest {
 
         assertThatThrownBy(() -> taskService.createSingleChoiceTask(dto))
                 .isInstanceOf(ResourceIllegalStateException.class)
-                .hasMessageContaining("status BUILDING");
+                .hasMessageContaining("Curso precisa estar com status BUILDING");
     }
 
     @Test
