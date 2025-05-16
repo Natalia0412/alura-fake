@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -34,6 +35,7 @@ public class TaskService {
         task.setType(Type.OPEN_TEXT);
         taskRepository.save(task);
 
+
         return mapper.toDto(task);
 
     }
@@ -43,6 +45,7 @@ public class TaskService {
         Course course = validateCourseAndOrder(dto.courseId(), dto.order());
 
         validateStatement(dto.statement(), course);
+        anyOptionEqualsStatement(dto);
 
        Long isCorrectCount =  dto.options().stream().filter(OptionDTO::isCorrect).count();
 
@@ -52,7 +55,21 @@ public class TaskService {
 
         reorderIfNecessary(course, dto.order());
 
-       
+        distinctTexts(dto);
+
+
+        Task task = mapper.singleDtoToTask(dto);
+        task.setCourse(course);
+        task.setType(Type.SINGLE_CHOICE);
+
+        List<Option> options = dto.options().stream()
+                .map(opt -> new Option(null, opt.text(), opt.isCorrect(), task))
+                .toList();
+
+        task.setOptions(options);
+        taskRepository.save(task);
+
+        return mapper.toSingDto(task);
     }
 
     private Course validateCourseAndOrder(Long courseId, Integer order) {
@@ -86,5 +103,26 @@ public class TaskService {
         }
     }
 
+    private void distinctTexts(SingleChoiceTaskDTO dto){
+        Set<String> distinctTexts = dto.options().stream()
+                .map(OptionDTO::text)
+                .collect(Collectors.toSet());
+
+        if (distinctTexts.size() < dto.options().size()) {
+            throw new ResourceIllegalArgumentException("As alternativas não podem ser repetidas.");
+        }
+    }
+
+    private void anyOptionEqualsStatement(SingleChoiceTaskDTO dto){
+        String normalizedStatement = dto.statement().trim().toLowerCase();
+
+        boolean anyOptionEqualsStatement = dto.options().stream()
+                .map(opt -> opt.text().trim().toLowerCase())
+                .anyMatch(optText -> optText.equals(normalizedStatement));
+
+        if (anyOptionEqualsStatement) {
+            throw new ResourceIllegalArgumentException("Nenhuma alternativa pode ser igual ao enunciado da atividade.");
+        }
+    }
 
 }

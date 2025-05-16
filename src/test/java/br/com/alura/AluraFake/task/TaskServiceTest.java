@@ -4,15 +4,20 @@ import br.com.alura.AluraFake.course.Course;
 import br.com.alura.AluraFake.course.CourseService;
 import br.com.alura.AluraFake.course.Status;
 import br.com.alura.AluraFake.task.dto.OpenTextTaskDTO;
+import br.com.alura.AluraFake.task.dto.OptionDTO;
+import br.com.alura.AluraFake.task.dto.SingleChoiceTaskDTO;
 import br.com.alura.AluraFake.user.User;
 import br.com.alura.AluraFake.util.error.ResourceIllegalArgumentException;
 import br.com.alura.AluraFake.util.error.ResourceIllegalStateException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -35,6 +40,13 @@ public class TaskServiceTest {
 
     @Mock
     private TaskMapper taskMapper;
+
+//    @BeforeEach
+//    void setUp() {
+//        MockitoAnnotations.openMocks(this);
+//        Course course = new Course();
+//        course.setStatus(Status.BUILDING);
+//    }
 
     @Test
     void shouldInsertTaskAtTheEndSuccessfully() {
@@ -149,5 +161,96 @@ public class TaskServiceTest {
                 .isInstanceOf(ResourceIllegalStateException.class)
                 .hasMessageContaining("Curso precisa estar com status BUILDING");
 
+    }
+
+    @Test
+    void shouldThrowException_whenMoreThanOneCorrectOption(){
+        User instructor = mock(User.class);
+        when(instructor.isInstructor()).thenReturn(true);
+        Long courseId = 1L;
+        Course course = new Course("Java", "desc", instructor);
+        course.setStatus(Status.BUILDING);
+
+        List<OptionDTO> options = Arrays.asList(
+                new OptionDTO("Java", true),
+                new OptionDTO("Python", true)
+        );
+
+        SingleChoiceTaskDTO dto = new SingleChoiceTaskDTO(courseId, "Qual linguagem?", 1, options);
+
+        when(courseService.findCourseById(courseId)).thenReturn(course);
+        when(taskRepository.findByCourseOrderByOrder(course)).thenReturn(Collections.emptyList());
+        when(taskRepository.existsByCourseAndStatement(course, "Qual linguagem?")).thenReturn(false);
+
+        assertThatThrownBy(() -> taskService.createSingleChoiceTask(dto))
+                .isInstanceOf(ResourceIllegalArgumentException.class)
+                .hasMessageContaining("exatamente uma opção correta");
+    }
+
+    @Test
+    void shouldThrowException_whenOptionsAreDuplicated() {
+        User instructor = mock(User.class);
+        when(instructor.isInstructor()).thenReturn(true);
+        Long courseId = 1L;
+        Course course = new Course("Java", "desc", instructor);
+        course.setStatus(Status.BUILDING);
+
+        List<OptionDTO> options = Arrays.asList(
+                new OptionDTO("Java", true),
+                new OptionDTO("Java", false)
+        );
+
+        SingleChoiceTaskDTO dto = new SingleChoiceTaskDTO(courseId, "Qual linguagem?", 1, options);
+        when(courseService.findCourseById(courseId)).thenReturn(course);
+        when(taskRepository.findByCourseOrderByOrder(course)).thenReturn(Collections.emptyList());
+        when(taskRepository.existsByCourseAndStatement(course, "Qual linguagem?")).thenReturn(false);
+
+        assertThatThrownBy(() -> taskService.createSingleChoiceTask(dto))
+                .isInstanceOf(ResourceIllegalArgumentException.class)
+                .hasMessageContaining("não podem ser repetidas");
+    }
+
+    @Test
+    void shouldThrowException_whenOptionEqualsStatement() {
+        User instructor = mock(User.class);
+        when(instructor.isInstructor()).thenReturn(true);
+        Long courseId = 1L;
+        Course course = new Course("Java", "desc", instructor);
+        course.setStatus(Status.BUILDING);
+
+        List<OptionDTO> options = Arrays.asList(
+                new OptionDTO("Qual linguagem?", true),
+                new OptionDTO("Python", false)
+        );
+        SingleChoiceTaskDTO dto = new SingleChoiceTaskDTO(1L, "Qual linguagem?", 1, options);
+
+        when(courseService.findCourseById(1L)).thenReturn(course);
+        when(taskRepository.findByCourseOrderByOrder(course)).thenReturn(Collections.emptyList());
+        when(taskRepository.existsByCourseAndStatement(course, "Qual linguagem?")).thenReturn(false);
+
+        assertThatThrownBy(() -> taskService.createSingleChoiceTask(dto))
+                .isInstanceOf(ResourceIllegalArgumentException.class)
+                .hasMessageContaining("igual ao enunciado");
+    }
+
+    @Test
+    void shouldThrowException_whenCourseNotBuilding() {
+        User instructor = mock(User.class);
+        when(instructor.isInstructor()).thenReturn(true);
+        Long courseId = 1L;
+        Course course = new Course("Java", "desc", instructor);
+        course.setStatus(Status.PUBLISHED);
+
+        List<OptionDTO> options = Arrays.asList(
+                new OptionDTO("Java", true),
+                new OptionDTO("Python", false)
+        );
+        SingleChoiceTaskDTO dto = new SingleChoiceTaskDTO(1L, "Qual linguagem?", 1, options);
+
+        when(courseService.findCourseById(1L)).thenReturn(course);
+
+        assertThatThrownBy(() -> taskService.createSingleChoiceTask(dto))
+                .isInstanceOf(ResourceIllegalStateException.class)
+                .hasMessageContaining("status BUILDING");
     }
 }
