@@ -2,6 +2,14 @@ package br.com.alura.AluraFake.task;
 
 import jakarta.persistence.*;
 import lombok.*;
+
+@Getter
+@Setter
+@ToString
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Entity
 public class Option {
         @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
         private Long id;
@@ -16,6 +24,6 @@ public class Option {
         private Task task;
 
 
-    
+
 
 }

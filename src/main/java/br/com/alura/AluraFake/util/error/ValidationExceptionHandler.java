@@ -1,11 +1,5 @@
 package br.com.alura.AluraFake.util.error;
 
-import br.com.alura.AluraFake.util.error.ErrorItemDTO;
-import br.com.alura.AluraFake.util.error.ErrorMsg;
-import br.com.alura.AluraFake.util.error.ResourceNotFoundException;
-import br.com.alura.AluraFake.util.error.ResourceIllegalArgumentException;
-import br.com.alura.AluraFake.util.error.ResourceIllegalStateException;
-import br.com.alura.AluraFake.util.error.ResponseError;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,42 +15,58 @@ import java.util.List;
 public class ValidationExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ResponseEntity<List<ErrorItemDTO>> handleValidationExceptions(MethodArgumentNotValidException ex) {
-        List<ErrorItemDTO> errors = ex.getBindingResult().getFieldErrors().stream().map(ErrorItemDTO::new).toList();
-        return ResponseEntity.badRequest().body(errors);
+    public ResponseEntity<ResponseError>  handleValidationExceptions(MethodArgumentNotValidException ex, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        List<ErrorMsg> errors = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(field -> ErrorMsg.builder()
+                        .message(field.getField() + ": " + field.getDefaultMessage())
+                        .build())
+                .toList();
+        ResponseError body = ResponseError.builder()
+                .timestamp(Instant.now())
+                .status(status.value())
+                .errors(errors)
+                .path(request.getRequestURI())
+                .build();
+        return ResponseEntity.status(status).body(body);
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseError resourceNotFoundException(ResourceNotFoundException ex, HttpServletRequest request) {
-        HttpStatus status = HttpStatus.NOT_FOUND;
-        return ResponseError.builder()
+    public ResponseEntity<ResponseError> resourceNotFoundException(ResourceNotFoundException ex, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.CONFLICT;
+        ResponseError body = ResponseError.builder()
                 .timestamp(Instant.now())
                 .status(status.value())
                 .errors(List.of(ErrorMsg.builder().message(ex.getMessage()).build()))
                 .path(request.getRequestURI())
                 .build();
+        return ResponseEntity.status(status).body(body);
     }
 
     @ExceptionHandler(ResourceIllegalStateException.class)
-    public ResponseError resourceIllegalStateException(ResourceIllegalStateException ex, HttpServletRequest request ){
+    public ResponseEntity<ResponseError> resourceIllegalStateException(ResourceIllegalStateException ex, HttpServletRequest request) {
         HttpStatus status = HttpStatus.NOT_FOUND;
-        return ResponseError.builder()
+        ResponseError body = ResponseError.builder()
                 .timestamp(Instant.now())
                 .status(status.value())
                 .errors(List.of(ErrorMsg.builder().message(ex.getMessage()).build()))
                 .path(request.getRequestURI())
                 .build();
+
+        return ResponseEntity.status(status).body(body);
     }
 
     @ExceptionHandler(ResourceIllegalArgumentException.class)
-    public ResponseError resourceIllegalArgumentException(ResourceIllegalArgumentException ex, HttpServletRequest request){
-        HttpStatus status = HttpStatus.NOT_FOUND;
-        return ResponseError.builder()
+    public ResponseEntity<ResponseError> resourceIllegalArgumentException(ResourceIllegalArgumentException ex, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        ResponseError body = ResponseError.builder()
                 .timestamp(Instant.now())
                 .status(status.value())
                 .errors(List.of(ErrorMsg.builder().message(ex.getMessage()).build()))
                 .path(request.getRequestURI())
                 .build();
+        return ResponseEntity.status(status).body(body);
     }
 }

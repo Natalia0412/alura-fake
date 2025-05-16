@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS Task (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    statement VARCHAR(255) NOT NULL,
+    `order` INT NOT NULL,
+    type ENUM('OPEN_TEXT', 'SINGLE_CHOICE', 'MULTIPLE_CHOICE') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+    course_id BIGINT NOT NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT FK_Task_Course FOREIGN KEY (course_id) REFERENCES Course(id),
+    UNIQUE KEY UK_Statement_Course (statement, course_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
