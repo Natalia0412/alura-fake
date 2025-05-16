@@ -2,33 +2,39 @@ package br.com.alura.AluraFake.task;
 
 import br.com.alura.AluraFake.course.Course;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
+
 
 import java.time.LocalDateTime;
 
-@Inheritance(strategy = InheritanceType.JOINED)
-@Entity
-@DiscriminatorColumn(name = "task_type")
+
 @Getter
 @Setter
 @ToString
 @NoArgsConstructor
-@MappedSuperclass
-public abstract class Task {
+@AllArgsConstructor
+@Builder
+@Entity
+public class Task {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    protected String statement;
+    @Column(nullable = false, length = 255)
+    private String statement;
 
-    protected Integer order;
+    @Column(nullable = false)
+    private Integer order;
 
-    @ManyToOne
-    @JoinColumn(name = "course_id")
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Type type;
+
+    @ManyToOne(optional = false)
     private Course course;
 
-    protected LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Option> options = new ArrayList<>();
 }
