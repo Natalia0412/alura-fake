@@ -4,12 +4,15 @@ import br.com.alura.AluraFake.course.Course;
 import br.com.alura.AluraFake.course.CourseService;
 import br.com.alura.AluraFake.course.Status;
 import br.com.alura.AluraFake.task.dto.OpenTextTaskDTO;
+import br.com.alura.AluraFake.task.dto.OptionDTO;
+import br.com.alura.AluraFake.task.dto.SingleChoiceTaskDTO;
 import br.com.alura.AluraFake.util.error.ResourceIllegalArgumentException;
 import br.com.alura.AluraFake.util.error.ResourceIllegalStateException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
@@ -33,6 +36,23 @@ public class TaskService {
 
         return mapper.toDto(task);
 
+    }
+
+    public SingleChoiceTaskDTO createSingleChoiceTask(SingleChoiceTaskDTO dto) {
+
+        Course course = validateCourseAndOrder(dto.courseId(), dto.order());
+
+        validateStatement(dto.statement(), course);
+
+       Long isCorrectCount =  dto.options().stream().filter(OptionDTO::isCorrect).count();
+
+       if(isCorrectCount != 1){
+           throw new ResourceIllegalArgumentException("Deve haver exatamente uma opção correta.");
+       }
+
+        reorderIfNecessary(course, dto.order());
+
+       
     }
 
     private Course validateCourseAndOrder(Long courseId, Integer order) {
