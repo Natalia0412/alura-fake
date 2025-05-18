@@ -1,5 +1,6 @@
 package br.com.alura.AluraFake.task;
 
+import br.com.alura.AluraFake.task.dto.MultipleChoiceTaskDTO;
 import br.com.alura.AluraFake.task.dto.OpenTextTaskDTO;
 import br.com.alura.AluraFake.task.dto.OptionDTO;
 import br.com.alura.AluraFake.task.dto.SingleChoiceTaskDTO;
@@ -14,6 +15,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -177,5 +180,78 @@ public class TaskControllerTest {
                 .andExpect(jsonPath("$.errors[0].message").value("options: Deve haver no mínimo 2 e no maximo 6 opções"));
     }
 
+//    multiplechoice
+    @Test
+    void shouldReturn400_whenOptionsAreTooFew_forMultipleChoice() throws Exception {
+        MultipleChoiceTaskDTO dto = new MultipleChoiceTaskDTO(
+                1L,
+                "Quais são linguagens de programação?",
+                1,
+                List.of(
+                        new OptionDTO("Java", true) // Apenas uma opção (mínimo é 2)
+                )
+        );
+
+        mockMvc.perform(post("/task/new/multiplechoice")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].message")
+                        .value("options: Deve haver no mínimo 3 e no maximo 5   opções"));
+    }
+
+    @Test
+    void shouldReturn200_whenMultipleChoiceTaskIsValid() throws Exception {
+        MultipleChoiceTaskDTO dto = new MultipleChoiceTaskDTO(
+                1L,
+                "Quais são linguagens de programação?",
+                1,
+                List.of(
+                        new OptionDTO("Java", true),
+                        new OptionDTO("Python", true),
+                        new OptionDTO("Banana", false)
+                )
+        );
+
+        when(taskService.createMultipleChoiceTask(any())).thenReturn(dto);
+
+        mockMvc.perform(post("/task/new/multiplechoice")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.statement").value(dto.statement()))
+                .andExpect(jsonPath("$.order").value(dto.order()))
+                .andExpect(jsonPath("$.options.length()").value(dto.options().size()));
+    }
+
+    @Test
+    void shouldCreateMultipleChoiceTaskSuccessfully() throws Exception {
+        MultipleChoiceTaskDTO dto = new MultipleChoiceTaskDTO(
+                1L,
+                "Quais são linguagens de programação?",
+                1,
+                List.of(
+                        new OptionDTO("Java", true),
+                        new OptionDTO("Python", true),
+                        new OptionDTO("Banana", false)
+                )
+        );
+
+        when(taskService.createMultipleChoiceTask(any())).thenReturn(dto);
+
+        mockMvc.perform(post("/task/new/multiplechoice")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.statement").value("Quais são linguagens de programação?"))
+                .andExpect(jsonPath("$.order").value(1))
+                .andExpect(jsonPath("$.options.length()").value(3))
+                .andExpect(jsonPath("$.options[0].text").value("Java"))
+                .andExpect(jsonPath("$.options[0].isCorrect").value(true))
+                .andExpect(jsonPath("$.options[1].text").value("Python"))
+                .andExpect(jsonPath("$.options[1].isCorrect").value(true))
+                .andExpect(jsonPath("$.options[2].text").value("Banana"))
+                .andExpect(jsonPath("$.options[2].isCorrect").value(false));
+    }
 
 }

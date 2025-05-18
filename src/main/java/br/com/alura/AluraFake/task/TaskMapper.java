@@ -1,5 +1,6 @@
 package br.com.alura.AluraFake.task;
 
+import br.com.alura.AluraFake.task.dto.MultipleChoiceTaskDTO;
 import br.com.alura.AluraFake.task.dto.OpenTextTaskDTO;
 import br.com.alura.AluraFake.task.dto.SingleChoiceTaskDTO;
 import org.mapstruct.Mapper;
@@ -25,4 +26,12 @@ public interface TaskMapper {
 
     @Mapping(target = "courseId", source = "course.id")
     SingleChoiceTaskDTO toSingDto(Task task);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "type", ignore = true)
+    @Mapping(target = "course", ignore = true)
+    @Mapping(target = "options", ignore = true)
+    Task multipleChoiseDtoToTask(MultipleChoiceTaskDTO dto);
+
+    MultipleChoiceTaskDTO taskToMultiplechoiceDto(Task task);
 }

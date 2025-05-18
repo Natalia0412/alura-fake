@@ -3,6 +3,7 @@ package br.com.alura.AluraFake.task;
 import br.com.alura.AluraFake.course.Course;
 import br.com.alura.AluraFake.course.CourseService;
 import br.com.alura.AluraFake.course.Status;
+import br.com.alura.AluraFake.task.dto.MultipleChoiceTaskDTO;
 import br.com.alura.AluraFake.task.dto.OpenTextTaskDTO;
 import br.com.alura.AluraFake.task.dto.OptionDTO;
 import br.com.alura.AluraFake.task.dto.SingleChoiceTaskDTO;
@@ -69,6 +70,7 @@ public class TaskServiceTest {
         when(taskRepository.findByCourseOrderByOrder(course)).thenReturn(Collections.emptyList());
     }
 
+//    createOpenTextTask
     @Test
     void shouldInsertTaskAtTheEndSuccessfully() {
         Course course = buildCourse(Status.BUILDING);
@@ -95,6 +97,53 @@ public class TaskServiceTest {
         verify(taskMapper).toTask(dto);
         verify(taskMapper).toDto(taskEntity);
     }
+
+    @Test
+    void shouldShiftTasksWhenOrderAlreadyExists() {
+        // Arrange
+        Course course = buildCourse(Status.BUILDING);
+        Long courseId = 1L;
+
+        // Atividades existentes no curso
+        Task task1 = Task.builder().id(1L).statement("Atividade 1").order(1).course(course).type(Type.OPEN_TEXT).build();
+        Task task2 = Task.builder().id(2L).statement("Atividade 2").order(2).course(course).type(Type.OPEN_TEXT).build();
+        Task task3 = Task.builder().id(3L).statement("Atividade 3").order(3).course(course).type(Type.OPEN_TEXT).build();
+
+        // Nova atividade será inserida na ordem 2
+        OpenTextTaskDTO dto = new OpenTextTaskDTO(courseId, "Nova Atividade", 2);
+
+        Task newTask = Task.builder()
+                .statement(dto.statement())
+                .order(dto.order())
+                .course(course)
+                .type(Type.OPEN_TEXT)
+                .build();
+
+        OpenTextTaskDTO expectedDto = new OpenTextTaskDTO(courseId, "Nova Atividade", 2);
+
+        // Mock
+        when(courseService.findCourseById(courseId)).thenReturn(course);
+        when(taskRepository.findByCourseOrderByOrder(course)).thenReturn(List.of(task1, task2, task3));
+        when(taskRepository.existsByCourseAndStatement(course, dto.statement())).thenReturn(false);
+        when(taskMapper.toTask(dto)).thenReturn(newTask);
+        when(taskRepository.save(newTask)).thenReturn(newTask);
+        when(taskMapper.toDto(newTask)).thenReturn(expectedDto);
+
+        // Act
+        OpenTextTaskDTO result = taskService.createOpenTextTask(dto);
+
+        // Assert
+        assertEquals(expectedDto.statement(), result.statement());
+        assertEquals(expectedDto.order(), result.order());
+
+        // Verifica se as ordens foram ajustadas corretamente
+        assertEquals(1, task1.getOrder());
+        assertEquals(3, task2.getOrder()); // Foi deslocado
+        assertEquals(4, task3.getOrder()); // Foi deslocado
+
+        verify(taskRepository).save(newTask);
+    }
+
 
     @Test
     void shouldThrowException_whenStatementIsDuplicatedInSameCourse() {
@@ -134,6 +183,8 @@ public class TaskServiceTest {
                 .isInstanceOf(ResourceIllegalStateException.class)
                 .hasMessageContaining("Curso precisa estar com status BUILDING");
     }
+
+//    createSingleChoiceTask
 
     @Test
     void shouldThrowException_whenMoreThanOneCorrectOption() {
@@ -239,5 +290,188 @@ public class TaskServiceTest {
         verify(taskMapper).singleDtoToTask(dto);
         verify(taskMapper).toSingDto(mappedTask);
     }
+
+//    createMultipleChoiceTask
+    @Test
+    void shouldCreateMultipleChoiceTaskSuccessfully() {
+        Course course = buildCourse(Status.BUILDING);
+        Long courseId = 1L;
+        String statement = "Quais são linguagens de programação?";
+        int order = 1;
+
+        List<OptionDTO> options = Arrays.asList(
+                new OptionDTO("Java", true),
+                new OptionDTO("Python", true),
+                new OptionDTO("Banana", false)
+        );
+
+        MultipleChoiceTaskDTO dto = new MultipleChoiceTaskDTO(courseId, statement, order, options);
+        Task mappedTask = Task.builder()
+                .statement(statement)
+                .order(order)
+                .type(Type.MULTIPLE_CHOICE)
+                .course(course)
+                .build();
+
+        when(courseService.findCourseById(courseId)).thenReturn(course);
+        when(taskRepository.findByCourseOrderByOrder(course)).thenReturn(Collections.emptyList());
+        when(taskRepository.existsByCourseAndStatement(course, statement)).thenReturn(false);
+        when(taskMapper.multipleChoiseDtoToTask(dto)).thenReturn(mappedTask);
+        when(taskRepository.save(any(Task.class))).thenReturn(mappedTask);
+        when(taskMapper.taskToMultiplechoiceDto(mappedTask)).thenReturn(dto);
+
+        MultipleChoiceTaskDTO result = taskService.createMultipleChoiceTask(dto);
+
+        assertEquals(dto.statement(), result.statement());
+        assertEquals(dto.options().size(), result.options().size());
+        verify(taskRepository).save(any(Task.class));
+    }
+
+    @Test
+    void shouldThrowException_whenLessThanTwoCorrectOptions() {
+        Course course = buildCourse(Status.BUILDING);
+        List<OptionDTO> options = optionsWithCorrect("Java", "Banana", "Maçã"); // só 1 correta
+
+        MultipleChoiceTaskDTO dto = new MultipleChoiceTaskDTO(1L, "Escolha linguagens.", 1, options);
+        mockCourseLookup(dto.courseId(), course);
+        when(taskRepository.existsByCourseAndStatement(course, dto.statement())).thenReturn(false);
+
+        assertThatThrownBy(() -> taskService.createMultipleChoiceTask(dto))
+                .isInstanceOf(ResourceIllegalArgumentException.class)
+                .hasMessageContaining("Atividades de múltipla escolha devem ter no mínimo duas corretas e pelo menos uma incorreta.");
+    }
+
+    @Test
+    void shouldThrowException_whenNoIncorrectOption() {
+        Course course = buildCourse(Status.BUILDING);
+        List<OptionDTO> options = Arrays.asList(
+                new OptionDTO("Java", true),
+                new OptionDTO("Python", true),
+                new OptionDTO("C#", true)
+        );
+
+        MultipleChoiceTaskDTO dto = new MultipleChoiceTaskDTO(1L, "Escolha linguagens.", 1, options);
+        mockCourseLookup(dto.courseId(), course);
+        when(taskRepository.existsByCourseAndStatement(course, dto.statement())).thenReturn(false);
+
+        assertThatThrownBy(() -> taskService.createMultipleChoiceTask(dto))
+                .isInstanceOf(ResourceIllegalArgumentException.class)
+                .hasMessageContaining("Atividades de múltipla escolha devem ter no mínimo duas corretas e pelo menos uma incorreta.");
+    }
+
+    @Test
+    void shouldThrowException_whenOptionsAreDuplicated_MultipleChoice() {
+        Course course = buildCourse(Status.BUILDING);
+        List<OptionDTO> options = Arrays.asList(
+                new OptionDTO("Java", true),
+                new OptionDTO("Java", false),
+                new OptionDTO("Python", true)
+        );
+
+        MultipleChoiceTaskDTO dto = new MultipleChoiceTaskDTO(1L, "Escolha linguagens.", 1, options);
+        mockCourseLookup(dto.courseId(), course);
+        when(taskRepository.existsByCourseAndStatement(course, dto.statement())).thenReturn(false);
+
+        assertThatThrownBy(() -> taskService.createMultipleChoiceTask(dto))
+                .isInstanceOf(ResourceIllegalArgumentException.class)
+                .hasMessageContaining("As alternativas não podem ser repetidas.");
+    }
+
+
+    @Test
+    void shouldThrowException_whenOptionEqualsStatement_MultipleChoice() {
+        Course course = buildCourse(Status.BUILDING);
+        String statement = "Qual linguagem?";
+        List<OptionDTO> options = Arrays.asList(
+                new OptionDTO(statement, true),
+                new OptionDTO("Python", true),
+                new OptionDTO("PHP", false)
+        );
+
+        MultipleChoiceTaskDTO dto = new MultipleChoiceTaskDTO(1L, statement, 1, options);
+        mockCourseLookup(dto.courseId(), course);
+        when(taskRepository.existsByCourseAndStatement(course, dto.statement())).thenReturn(false);
+
+        assertThatThrownBy(() -> taskService.createMultipleChoiceTask(dto))
+                .isInstanceOf(ResourceIllegalArgumentException.class)
+                .hasMessageContaining("Nenhuma alternativa pode ser igual ao enunciado da atividade.");
+    }
+
+    @Test
+    void shouldCreateMultipleChoiceTaskWithFiveOptionsSuccessfully() {
+        Course course = buildCourse(Status.BUILDING);
+        List<OptionDTO> options = Arrays.asList(
+                new OptionDTO("Java", true),
+                new OptionDTO("Python", true),
+                new OptionDTO("C++", false),
+                new OptionDTO("Ruby", false),
+                new OptionDTO("Kotlin", false)
+        );
+
+        MultipleChoiceTaskDTO dto = new MultipleChoiceTaskDTO(1L, "Linguagens?", 1, options);
+        Task mappedTask = Task.builder().statement(dto.statement()).order(dto.order()).type(Type.MULTIPLE_CHOICE).course(course).build();
+
+        mockCourseLookup(dto.courseId(), course);
+        when(taskRepository.existsByCourseAndStatement(course, dto.statement())).thenReturn(false);
+        when(taskMapper.multipleChoiseDtoToTask(dto)).thenReturn(mappedTask);
+        when(taskRepository.save(any(Task.class))).thenReturn(mappedTask);
+        when(taskMapper.taskToMultiplechoiceDto(mappedTask)).thenReturn(dto);
+
+        MultipleChoiceTaskDTO result = taskService.createMultipleChoiceTask(dto);
+
+        assertEquals(5, result.options().size());
+    }
+
+    @Test
+    void shouldShiftMultipleChoiceTasksWhenOrderAlreadyExists() {
+        // Arrange
+        Course course = buildCourse(Status.BUILDING);
+        Long courseId = 1L;
+
+        Task task1 = Task.builder().id(1L).statement("Tarefa 1").order(1).course(course).type(Type.MULTIPLE_CHOICE).build();
+        Task task2 = Task.builder().id(2L).statement("Tarefa 2").order(2).course(course).type(Type.MULTIPLE_CHOICE).build();
+        Task task3 = Task.builder().id(3L).statement("Tarefa 3").order(3).course(course).type(Type.MULTIPLE_CHOICE).build();
+
+        List<OptionDTO> options = Arrays.asList(
+                new OptionDTO("Java", true),
+                new OptionDTO("Python", true),
+                new OptionDTO("Cobol", false)
+        );
+
+        MultipleChoiceTaskDTO dto = new MultipleChoiceTaskDTO(courseId, "Nova Múltipla Escolha", 2, options);
+
+        Task newTask = Task.builder()
+                .statement(dto.statement())
+                .order(dto.order())
+                .course(course)
+                .type(Type.MULTIPLE_CHOICE)
+                .build();
+
+        MultipleChoiceTaskDTO expectedDto = new MultipleChoiceTaskDTO(courseId, "Nova Múltipla Escolha", 2, options);
+
+        // Mocks
+        when(courseService.findCourseById(courseId)).thenReturn(course);
+        when(taskRepository.findByCourseOrderByOrder(course)).thenReturn(List.of(task1, task2, task3));
+        when(taskRepository.existsByCourseAndStatement(course, dto.statement())).thenReturn(false);
+        when(taskMapper.multipleChoiseDtoToTask(dto)).thenReturn(newTask);
+        when(taskRepository.save(newTask)).thenReturn(newTask);
+        when(taskMapper.taskToMultiplechoiceDto(newTask)).thenReturn(expectedDto);
+
+        // Act
+        MultipleChoiceTaskDTO result = taskService.createMultipleChoiceTask(dto);
+
+        // Assert
+        assertEquals(expectedDto.statement(), result.statement());
+        assertEquals(expectedDto.order(), result.order());
+
+        // Verifica reordenação
+        assertEquals(1, task1.getOrder());
+        assertEquals(3, task2.getOrder()); // deslocado
+        assertEquals(4, task3.getOrder()); // deslocado
+
+        verify(taskRepository).save(newTask);
+        verify(taskRepository, times(2)).findByCourseOrderByOrder(course); // chamada na validação e no reorder
+    }
+
 
 }

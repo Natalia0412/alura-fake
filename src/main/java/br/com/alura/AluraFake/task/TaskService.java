@@ -3,6 +3,7 @@ package br.com.alura.AluraFake.task;
 import br.com.alura.AluraFake.course.Course;
 import br.com.alura.AluraFake.course.CourseService;
 import br.com.alura.AluraFake.course.Status;
+import br.com.alura.AluraFake.task.dto.MultipleChoiceTaskDTO;
 import br.com.alura.AluraFake.task.dto.OpenTextTaskDTO;
 import br.com.alura.AluraFake.task.dto.OptionDTO;
 import br.com.alura.AluraFake.task.dto.SingleChoiceTaskDTO;
@@ -45,31 +46,32 @@ public class TaskService {
         Course course = validateCourseAndOrder(dto.courseId(), dto.order());
 
         validateStatement(dto.statement(), course);
-        anyOptionEqualsStatement(dto);
-
-       Long isCorrectCount =  dto.options().stream().filter(OptionDTO::isCorrect).count();
-
-       if(isCorrectCount != 1){
-           throw new ResourceIllegalArgumentException("Deve haver exatamente uma opção correta.");
-       }
-
+        validateOptions(dto.statement(), dto.options(), false);
         reorderIfNecessary(course, dto.order());
-
-        distinctTexts(dto);
-
 
         Task task = mapper.singleDtoToTask(dto);
         task.setCourse(course);
         task.setType(Type.SINGLE_CHOICE);
-
-        List<Option> options = dto.options().stream()
-                .map(opt -> new Option(null, opt.text(), opt.isCorrect(), task))
-                .toList();
-
-        task.setOptions(options);
+        task.setOptions(mapOptions(dto.options(), task));
         taskRepository.save(task);
 
         return mapper.toSingDto(task);
+    }
+
+    public MultipleChoiceTaskDTO createMultipleChoiceTask(MultipleChoiceTaskDTO dto) {
+        Course course = validateCourseAndOrder(dto.courseId(), dto.order());
+        validateStatement(dto.statement(), course);
+        validateOptions(dto.statement(), dto.options(), true);
+        reorderIfNecessary(course, dto.order());
+
+        Task task = mapper.multipleChoiseDtoToTask(dto);
+        task.setCourse(course);
+        task.setType(Type.MULTIPLE_CHOICE);
+        task.setOptions(mapOptions(dto.options(), task));
+        taskRepository.save(task);
+
+        return mapper.taskToMultiplechoiceDto(task);
+
     }
 
     private Course validateCourseAndOrder(Long courseId, Integer order) {
@@ -78,7 +80,6 @@ public class TaskService {
             throw new ResourceIllegalStateException("Curso precisa estar com status BUILDING");
         }
 
-        // Verifica continuidade da ordem
         List<Task> tasks = taskRepository.findByCourseOrderByOrder(course);
         if (order > tasks.size() + 1) {
             throw new ResourceIllegalArgumentException("Ordem inválida: não pode haver saltos na sequência.");
@@ -88,8 +89,7 @@ public class TaskService {
     }
 
     private void validateStatement(String statement, Course course) {
-        boolean exists = taskRepository.existsByCourseAndStatement(course, statement);
-        if (exists) {
+        if (taskRepository.existsByCourseAndStatement(course, statement)) {
             throw new ResourceIllegalArgumentException("Já existe uma atividade com esse enunciado para o curso.");
         }
     }
@@ -103,26 +103,41 @@ public class TaskService {
         }
     }
 
-    private void distinctTexts(SingleChoiceTaskDTO dto){
-        Set<String> distinctTexts = dto.options().stream()
-                .map(OptionDTO::text)
+    private void validateOptions(String statement, List<OptionDTO> options, boolean isMultipleChoice) {
+        Set<String> distinctTexts = options.stream()
+                .map(opt -> opt.text().trim().toLowerCase())
                 .collect(Collectors.toSet());
 
-        if (distinctTexts.size() < dto.options().size()) {
+        if (distinctTexts.size() < options.size()) {
             throw new ResourceIllegalArgumentException("As alternativas não podem ser repetidas.");
         }
-    }
 
-    private void anyOptionEqualsStatement(SingleChoiceTaskDTO dto){
-        String normalizedStatement = dto.statement().trim().toLowerCase();
-
-        boolean anyOptionEqualsStatement = dto.options().stream()
-                .map(opt -> opt.text().trim().toLowerCase())
-                .anyMatch(optText -> optText.equals(normalizedStatement));
-
-        if (anyOptionEqualsStatement) {
+        String normalizedStatement = statement.trim().toLowerCase();
+        if (distinctTexts.contains(normalizedStatement)) {
             throw new ResourceIllegalArgumentException("Nenhuma alternativa pode ser igual ao enunciado da atividade.");
         }
+
+        long correctCount = options.stream().filter(OptionDTO::isCorrect).count();
+        long incorrectCount = options.size() - correctCount;
+
+        if (isMultipleChoice) {
+            if (correctCount < 2 || incorrectCount < 1) {
+                throw new ResourceIllegalArgumentException("Atividades de múltipla escolha devem ter no mínimo duas corretas e pelo menos uma incorreta.");
+            }
+        } else {
+            if (correctCount != 1) {
+                throw new ResourceIllegalArgumentException("Deve haver exatamente uma opção correta.");
+            }
+        }
     }
+
+    private List<Option> mapOptions(List<OptionDTO> dtoList, Task task) {
+        return dtoList.stream()
+                .map(opt -> new Option(null, opt.text(), opt.isCorrect(), task))
+                .toList();
+    }
+
+
+
 
 }
