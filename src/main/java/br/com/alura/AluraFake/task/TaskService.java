@@ -9,10 +9,12 @@ import br.com.alura.AluraFake.task.dto.OptionDTO;
 import br.com.alura.AluraFake.task.dto.SingleChoiceTaskDTO;
 import br.com.alura.AluraFake.util.error.ResourceIllegalArgumentException;
 import br.com.alura.AluraFake.util.error.ResourceIllegalStateException;
+import br.com.alura.AluraFake.util.error.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -137,7 +139,10 @@ public class TaskService {
                 .toList();
     }
 
-
-
+    public Task findTaskById(Long taskId) {
+        Optional<Task> obj = taskRepository.findById(taskId);
+        if (obj.isEmpty()) throw new ResourceNotFoundException("Task não encontrado");
+        return obj.get();
+    }
 
 }
