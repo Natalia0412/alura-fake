@@ -9,6 +9,7 @@ import br.com.alura.AluraFake.util.error.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -53,6 +54,7 @@ public class CourseService {
         }
 
         course.setStatus(Status.PUBLISHED);
+        course.setPublishedAt(LocalDateTime.now());
         courseRepository.save(course);
     }
 }

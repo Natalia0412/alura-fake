@@ -13,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.hibernate.validator.internal.util.Contracts.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
@@ -55,7 +56,8 @@ public class CourseServiceTest {
         courseService.publishCourse(1L);
 
         verify(courseRepository).save(course);
-        assert course.getStatus() == Status.PUBLISHED;
+        assertEquals(Status.PUBLISHED, course.getStatus());
+        assertNotNull(course.getPublishedAt(), "Data de publicação deve ser registrada");
     }
 
     @Test
