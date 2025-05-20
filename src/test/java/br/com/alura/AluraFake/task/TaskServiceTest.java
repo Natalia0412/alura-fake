@@ -41,6 +41,9 @@ public class TaskServiceTest {
     @Mock
     private TaskMapper taskMapper;
 
+    @Mock
+    private TaskOptionMapper taskOptionMapper;
+
 
     private Course buildCourse(Status status) {
         User instructor = mock(User.class);
