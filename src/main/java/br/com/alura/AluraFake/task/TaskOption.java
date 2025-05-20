@@ -3,27 +3,23 @@ package br.com.alura.AluraFake.task;
 import jakarta.persistence.*;
 import lombok.*;
 
-@Getter
-@Setter
-@ToString
-@NoArgsConstructor
+@Data
 @AllArgsConstructor
-@Builder
+@NoArgsConstructor
+@Builder(toBuilder = true)
 @Entity
-public class Option {
+@Table(name = "task_option")
+public class TaskOption {
         @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
         private Long id;
 
-        @Column(nullable = false, length = 80)
+        @Column(nullable = false, length = 80, name = "option_text")
         private String option;
-
-        @Column(nullable = false)
-        private boolean isCorrect;
 
         @ManyToOne(optional = false)
         private Task task;
 
-
-
+        @Column(nullable = false)
+        private boolean isCorrect;
 
 }

@@ -6,12 +6,11 @@ import br.com.alura.AluraFake.task.dto.SingleChoiceTaskDTO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = TaskOptionMapper.class)
 public interface TaskMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "type", ignore = true)
     @Mapping(target = "course", ignore = true)
-    @Mapping(target = "options", ignore = true)
     Task toTask(OpenTextTaskDTO dto);
 
 
@@ -21,17 +20,18 @@ public interface TaskMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "type", ignore = true)
     @Mapping(target = "course", ignore = true)
-    @Mapping(target = "options", ignore = true)
     Task singleDtoToTask(SingleChoiceTaskDTO dto);
 
     @Mapping(target = "courseId", source = "course.id")
+//    @Mapping(target = "option", source = "text")
     SingleChoiceTaskDTO toSingDto(Task task);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "type", ignore = true)
     @Mapping(target = "course", ignore = true)
-    @Mapping(target = "options", ignore = true)
     Task multipleChoiseDtoToTask(MultipleChoiceTaskDTO dto);
 
+    @Mapping(target = "courseId", source = "course.id")
+//    @Mapping(target = "option", source = "text")
     MultipleChoiceTaskDTO taskToMultiplechoiceDto(Task task);
 }

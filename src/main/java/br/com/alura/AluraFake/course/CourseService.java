@@ -17,7 +17,6 @@ import java.util.Optional;
 @Service
 public class CourseService {
     private final CourseRepository courseRepository;
-    private final TaskService taskService;
     private  final TaskRepository taskRepository;
 
     public Course findCourseById(Long courseId){

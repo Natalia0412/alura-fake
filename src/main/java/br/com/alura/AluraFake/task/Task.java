@@ -38,5 +38,5 @@ public class Task {
     private LocalDateTime createdAt;
 
     @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Option> options = new ArrayList<>();
+    private List<TaskOption> options = new ArrayList<>();
 }

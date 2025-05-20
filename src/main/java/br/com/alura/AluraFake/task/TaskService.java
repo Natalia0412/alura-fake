@@ -24,6 +24,7 @@ public class TaskService {
     private final CourseService courseService;
     private final TaskRepository taskRepository;
     private final TaskMapper mapper;
+    private final TaskOptionMapper taskOptionMapper;
 
     public OpenTextTaskDTO createOpenTextTask(OpenTextTaskDTO dto) {
 
@@ -54,7 +55,11 @@ public class TaskService {
         Task task = mapper.singleDtoToTask(dto);
         task.setCourse(course);
         task.setType(Type.SINGLE_CHOICE);
-        task.setOptions(mapOptions(dto.options(), task));
+        task.setOptions(
+                taskOptionMapper.toEntityList(dto.options()).stream()
+                        .peek(opt -> opt.setTask(task))
+                        .toList()
+        );
         taskRepository.save(task);
 
         return mapper.toSingDto(task);
@@ -69,7 +74,11 @@ public class TaskService {
         Task task = mapper.multipleChoiseDtoToTask(dto);
         task.setCourse(course);
         task.setType(Type.MULTIPLE_CHOICE);
-        task.setOptions(mapOptions(dto.options(), task));
+        task.setOptions(
+                taskOptionMapper.toEntityList(dto.options()).stream()
+                        .peek(opt -> opt.setTask(task))
+                        .toList()
+        );
         taskRepository.save(task);
 
         return mapper.taskToMultiplechoiceDto(task);
@@ -133,11 +142,7 @@ public class TaskService {
         }
     }
 
-    private List<Option> mapOptions(List<OptionDTO> dtoList, Task task) {
-        return dtoList.stream()
-                .map(opt -> new Option(null, opt.text(), opt.isCorrect(), task))
-                .toList();
-    }
+
 
     public Task findTaskById(Long taskId) {
         Optional<Task> obj = taskRepository.findById(taskId);
