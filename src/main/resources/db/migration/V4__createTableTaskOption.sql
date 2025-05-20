@@ -1,0 +1,8 @@
+CREATE TABLE task_option (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    option_text VARCHAR(80) NOT NULL,
+    isCorrect BOOLEAN NOT NULL,
+    task_id BIGINT NOT NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT FK_task_option_task FOREIGN KEY (task_id) REFERENCES Task(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
