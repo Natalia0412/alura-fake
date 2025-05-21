@@ -1,6 +1,6 @@
-package br.com.alura.AluraFake.task;
+package br.com.alura.AluraFake.task.model;
 
-import br.com.alura.AluraFake.course.Course;
+import br.com.alura.AluraFake.course.model.Course;
 import jakarta.persistence.*;
 import lombok.*;
 

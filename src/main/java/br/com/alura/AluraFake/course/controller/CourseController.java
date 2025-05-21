@@ -1,14 +1,23 @@
-package br.com.alura.AluraFake.course;
+package br.com.alura.AluraFake.course.controller;
 
-import br.com.alura.AluraFake.user.*;
+import br.com.alura.AluraFake.course.dto.CourseListItemDTO;
+import br.com.alura.AluraFake.course.dto.CoursePublishedDTO;
+import br.com.alura.AluraFake.course.dto.NewCourseDTO;
+import br.com.alura.AluraFake.course.model.Course;
+import br.com.alura.AluraFake.course.repository.CourseRepository;
+import br.com.alura.AluraFake.course.service.CourseService;
+import br.com.alura.AluraFake.user.model.User;
+import br.com.alura.AluraFake.user.repository.UserRepository;
 import br.com.alura.AluraFake.util.error.ErrorItemDTO;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
 
 @RestController
 public class CourseController {
@@ -19,7 +28,7 @@ public class CourseController {
     private final CourseService courseService;
 
     @Autowired
-    public CourseController(CourseRepository courseRepository, UserRepository userRepository, CourseService courseService){
+    public CourseController(CourseRepository courseRepository, UserRepository userRepository, CourseService courseService) {
         this.courseRepository = courseRepository;
         this.userRepository = userRepository;
         this.courseService = courseService;
@@ -34,7 +43,7 @@ public class CourseController {
                 .findByEmail(newCourse.getEmailInstructor())
                 .filter(User::isInstructor);
 
-        if(possibleAuthor.isEmpty()) {
+        if (possibleAuthor.isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new ErrorItemDTO("emailInstructor", "Usuário não é um instrutor"));
         }
@@ -54,9 +63,9 @@ public class CourseController {
     }
 
     @PostMapping("/course/{id}/publish")
-    public ResponseEntity<Void> createCourse(@PathVariable("id") Long id) {
-        courseService.publishCourse(id);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<CoursePublishedDTO> publishCourse(@PathVariable("id") Long id) {
+        CoursePublishedDTO response = courseService.publishCourse(id);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
 }

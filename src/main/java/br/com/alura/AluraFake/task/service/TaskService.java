@@ -1,12 +1,18 @@
-package br.com.alura.AluraFake.task;
+package br.com.alura.AluraFake.task.service;
 
-import br.com.alura.AluraFake.course.Course;
-import br.com.alura.AluraFake.course.CourseService;
-import br.com.alura.AluraFake.course.Status;
+import br.com.alura.AluraFake.course.model.Course;
+import br.com.alura.AluraFake.course.repository.CourseRepository;
+import br.com.alura.AluraFake.course.service.CourseService;
+import br.com.alura.AluraFake.course.model.Status;
+import br.com.alura.AluraFake.task.mapper.TaskMapper;
+import br.com.alura.AluraFake.task.mapper.TaskOptionMapper;
+import br.com.alura.AluraFake.task.repository.TaskRepository;
+import br.com.alura.AluraFake.task.model.Type;
 import br.com.alura.AluraFake.task.dto.MultipleChoiceTaskDTO;
 import br.com.alura.AluraFake.task.dto.OpenTextTaskDTO;
 import br.com.alura.AluraFake.task.dto.OptionDTO;
 import br.com.alura.AluraFake.task.dto.SingleChoiceTaskDTO;
+import br.com.alura.AluraFake.task.model.Task;
 import br.com.alura.AluraFake.util.error.ResourceIllegalArgumentException;
 import br.com.alura.AluraFake.util.error.ResourceIllegalStateException;
 import br.com.alura.AluraFake.util.error.ResourceNotFoundException;
@@ -21,7 +27,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Service
 public class TaskService {
-    private final CourseService courseService;
+
+    private final CourseRepository courseRepository;
     private final TaskRepository taskRepository;
     private final TaskMapper mapper;
     private final TaskOptionMapper taskOptionMapper;
@@ -86,7 +93,7 @@ public class TaskService {
     }
 
     private Course validateCourseAndOrder(Long courseId, Integer order) {
-        Course course = courseService.findCourseById(courseId);
+        Course course = courseRepository.findById(courseId).orElseThrow(()-> new ResourceNotFoundException("Curso não encontrado"));
         if (course.getStatus() != Status.BUILDING) {
             throw new ResourceIllegalStateException("Curso precisa estar com status BUILDING");
         }
@@ -145,9 +152,28 @@ public class TaskService {
 
 
     public Task findTaskById(Long taskId) {
-        Optional<Task> obj = taskRepository.findById(taskId);
-        if (obj.isEmpty()) throw new ResourceNotFoundException("Task não encontrado");
-        return obj.get();
+        return taskRepository.findById(taskId).orElseThrow(() ->new ResourceNotFoundException("Task não encontrado"));
+    }
+
+    public List<Task> checkCourseHasTask (Course course){
+        List<Task> tasks = taskRepository.findByCourseOrderByOrder(course);
+
+        if (tasks.isEmpty()) {
+            throw new ResourceIllegalStateException("Curso precisa de tarefas para ser publicado.");
+        }
+
+        return tasks;
+    }
+    public void checkCourseHasOneOfEachTypeOfTask( List<Task> tasks){
+
+
+        boolean hasOpenText = tasks.stream().anyMatch(t -> t.getType() == Type.OPEN_TEXT);
+        boolean hasSingleChoice = tasks.stream().anyMatch(t -> t.getType() == Type.SINGLE_CHOICE);
+        boolean hasMultipleChoice = tasks.stream().anyMatch(t -> t.getType() == Type.MULTIPLE_CHOICE);
+
+        if (!(hasOpenText && hasSingleChoice && hasMultipleChoice)) {
+            throw new ResourceIllegalStateException("Curso precisa de todos os tipos de tarefas.");
+        }
     }
 
 }

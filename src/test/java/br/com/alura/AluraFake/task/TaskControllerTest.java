@@ -1,9 +1,11 @@
 package br.com.alura.AluraFake.task;
 
+import br.com.alura.AluraFake.task.controller.TaskController;
 import br.com.alura.AluraFake.task.dto.MultipleChoiceTaskDTO;
 import br.com.alura.AluraFake.task.dto.OpenTextTaskDTO;
 import br.com.alura.AluraFake.task.dto.OptionDTO;
 import br.com.alura.AluraFake.task.dto.SingleChoiceTaskDTO;
+import br.com.alura.AluraFake.task.service.TaskService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

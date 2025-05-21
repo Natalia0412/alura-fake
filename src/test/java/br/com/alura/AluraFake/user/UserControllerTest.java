@@ -1,5 +1,10 @@
 package br.com.alura.AluraFake.user;
 
+import br.com.alura.AluraFake.user.controller.UserController;
+import br.com.alura.AluraFake.user.dto.NewUserDTO;
+import br.com.alura.AluraFake.user.model.Role;
+import br.com.alura.AluraFake.user.model.User;
+import br.com.alura.AluraFake.user.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,6 +1,7 @@
-package br.com.alura.AluraFake.user;
+package br.com.alura.AluraFake.user.repository;
 
 
+import br.com.alura.AluraFake.user.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

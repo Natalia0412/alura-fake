@@ -1,13 +1,19 @@
 package br.com.alura.AluraFake.task;
 
-import br.com.alura.AluraFake.course.Course;
-import br.com.alura.AluraFake.course.CourseService;
-import br.com.alura.AluraFake.course.Status;
+import br.com.alura.AluraFake.course.model.Course;
+import br.com.alura.AluraFake.course.model.Status;
+import br.com.alura.AluraFake.course.repository.CourseRepository;
 import br.com.alura.AluraFake.task.dto.MultipleChoiceTaskDTO;
 import br.com.alura.AluraFake.task.dto.OpenTextTaskDTO;
 import br.com.alura.AluraFake.task.dto.OptionDTO;
 import br.com.alura.AluraFake.task.dto.SingleChoiceTaskDTO;
-import br.com.alura.AluraFake.user.User;
+import br.com.alura.AluraFake.task.mapper.TaskMapper;
+import br.com.alura.AluraFake.task.mapper.TaskOptionMapper;
+import br.com.alura.AluraFake.task.model.Task;
+import br.com.alura.AluraFake.task.model.Type;
+import br.com.alura.AluraFake.task.repository.TaskRepository;
+import br.com.alura.AluraFake.task.service.TaskService;
+import br.com.alura.AluraFake.user.model.User;
 import br.com.alura.AluraFake.util.error.ResourceIllegalArgumentException;
 import br.com.alura.AluraFake.util.error.ResourceIllegalStateException;
 import org.junit.jupiter.api.Test;
@@ -16,10 +22,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,7 +35,7 @@ public class TaskServiceTest {
     private TaskService taskService;
 
     @Mock
-    private CourseService courseService;
+    private CourseRepository courseRepository;
 
     @Mock
     private TaskRepository taskRepository;
@@ -40,6 +43,9 @@ public class TaskServiceTest {
 
     @Mock
     private TaskMapper taskMapper;
+
+    @Mock
+    private TaskOptionMapper taskOptionMapper;
 
 
     private Course buildCourse(Status status) {
@@ -66,11 +72,12 @@ public class TaskServiceTest {
     }
 
     private void mockCourseLookup(Long courseId, Course course) {
-        when(courseService.findCourseById(courseId)).thenReturn(course);
+        when(courseRepository.findById(courseId)).thenReturn(Optional.of(course));
         when(taskRepository.findByCourseOrderByOrder(course)).thenReturn(Collections.emptyList());
     }
 
 //    createOpenTextTask
+
     @Test
     void shouldInsertTaskAtTheEndSuccessfully() {
         Course course = buildCourse(Status.BUILDING);
@@ -122,7 +129,7 @@ public class TaskServiceTest {
         OpenTextTaskDTO expectedDto = new OpenTextTaskDTO(courseId, "Nova Atividade", 2);
 
         // Mock
-        when(courseService.findCourseById(courseId)).thenReturn(course);
+        when(courseRepository.findById(courseId)).thenReturn(Optional.of(course));
         when(taskRepository.findByCourseOrderByOrder(course)).thenReturn(List.of(task1, task2, task3));
         when(taskRepository.existsByCourseAndStatement(course, dto.statement())).thenReturn(false);
         when(taskMapper.toTask(dto)).thenReturn(newTask);
@@ -162,9 +169,9 @@ public class TaskServiceTest {
     @Test
     void shouldThrowException_whenOrderSkipsSequence() {
         Course course = buildCourse(Status.BUILDING);
-        Task existingTask = Task.builder().id(10L).statement("Tarefa existente").order(1).course(course).type(Type.OPEN_TEXT).build();
-        when(courseService.findCourseById(1L)).thenReturn(course);
-        when(taskRepository.findByCourseOrderByOrder(course)).thenReturn(List.of(existingTask));
+        Task task = Task.builder().id(10L).statement("teste").order(1).course(course).type(Type.OPEN_TEXT).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(taskRepository.findByCourseOrderByOrder(course)).thenReturn(List.of(task));
 
         OpenTextTaskDTO dto = new OpenTextTaskDTO(1L, "O que é polimorfismo?", 3);
 
@@ -177,7 +184,7 @@ public class TaskServiceTest {
     void shouldThrowException_whenStatusNotBuilding() {
         Course course = buildCourse(Status.PUBLISHED);
         OpenTextTaskDTO dto = new OpenTextTaskDTO(1L, "O que é polimorfismo?", 1);
-        when(courseService.findCourseById(dto.courseId())).thenReturn(course);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
 
         assertThatThrownBy(() -> taskService.createOpenTextTask(dto))
                 .isInstanceOf(ResourceIllegalStateException.class)
@@ -240,7 +247,8 @@ public class TaskServiceTest {
         List<OptionDTO> options = optionsWithCorrect("Java", "Python");
         SingleChoiceTaskDTO dto = new SingleChoiceTaskDTO(1L, "Qual linguagem?", 1, options);
 
-        when(courseService.findCourseById(dto.courseId())).thenReturn(course);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+
 
         assertThatThrownBy(() -> taskService.createSingleChoiceTask(dto))
                 .isInstanceOf(ResourceIllegalStateException.class)
@@ -269,7 +277,7 @@ public class TaskServiceTest {
                 .course(course)
                 .build();
 
-        when(courseService.findCourseById(courseId)).thenReturn(course);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
         when(taskRepository.findByCourseOrderByOrder(course)).thenReturn(Collections.emptyList());
         when(taskRepository.existsByCourseAndStatement(course, statement)).thenReturn(false);
         when(taskMapper.singleDtoToTask(dto)).thenReturn(mappedTask);
@@ -284,14 +292,14 @@ public class TaskServiceTest {
         assertEquals(dto.order(), result.order());
         assertEquals(dto.options().size(), result.options().size());
 
-        verify(courseService).findCourseById(courseId);
+        verify(courseRepository).findById(courseId);
         verify(taskRepository, times(2)).findByCourseOrderByOrder(course); // corrigido aqui
         verify(taskRepository).save(any(Task.class));
         verify(taskMapper).singleDtoToTask(dto);
         verify(taskMapper).toSingDto(mappedTask);
     }
 
-//    createMultipleChoiceTask
+    //    createMultipleChoiceTask
     @Test
     void shouldCreateMultipleChoiceTaskSuccessfully() {
         Course course = buildCourse(Status.BUILDING);
@@ -313,7 +321,7 @@ public class TaskServiceTest {
                 .course(course)
                 .build();
 
-        when(courseService.findCourseById(courseId)).thenReturn(course);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
         when(taskRepository.findByCourseOrderByOrder(course)).thenReturn(Collections.emptyList());
         when(taskRepository.existsByCourseAndStatement(course, statement)).thenReturn(false);
         when(taskMapper.multipleChoiseDtoToTask(dto)).thenReturn(mappedTask);
@@ -450,7 +458,7 @@ public class TaskServiceTest {
         MultipleChoiceTaskDTO expectedDto = new MultipleChoiceTaskDTO(courseId, "Nova Múltipla Escolha", 2, options);
 
         // Mocks
-        when(courseService.findCourseById(courseId)).thenReturn(course);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
         when(taskRepository.findByCourseOrderByOrder(course)).thenReturn(List.of(task1, task2, task3));
         when(taskRepository.existsByCourseAndStatement(course, dto.statement())).thenReturn(false);
         when(taskMapper.multipleChoiseDtoToTask(dto)).thenReturn(newTask);
