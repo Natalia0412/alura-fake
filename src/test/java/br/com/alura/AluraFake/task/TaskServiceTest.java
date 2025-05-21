@@ -1,17 +1,17 @@
 package br.com.alura.AluraFake.task;
 
 import br.com.alura.AluraFake.course.model.Course;
+import br.com.alura.AluraFake.course.model.Status;
 import br.com.alura.AluraFake.course.repository.CourseRepository;
 import br.com.alura.AluraFake.course.service.CourseService;
-import br.com.alura.AluraFake.course.model.Status;
 import br.com.alura.AluraFake.task.dto.MultipleChoiceTaskDTO;
 import br.com.alura.AluraFake.task.dto.OpenTextTaskDTO;
 import br.com.alura.AluraFake.task.dto.OptionDTO;
 import br.com.alura.AluraFake.task.dto.SingleChoiceTaskDTO;
 import br.com.alura.AluraFake.task.mapper.TaskMapper;
-import br.com.alura.AluraFake.task.model.Type;
-import br.com.alura.AluraFake.task.model.Task;
 import br.com.alura.AluraFake.task.mapper.TaskOptionMapper;
+import br.com.alura.AluraFake.task.model.Task;
+import br.com.alura.AluraFake.task.model.Type;
 import br.com.alura.AluraFake.task.repository.TaskRepository;
 import br.com.alura.AluraFake.task.service.TaskService;
 import br.com.alura.AluraFake.user.model.User;
@@ -303,7 +303,7 @@ public class TaskServiceTest {
         verify(taskMapper).toSingDto(mappedTask);
     }
 
-//    createMultipleChoiceTask
+    //    createMultipleChoiceTask
     @Test
     void shouldCreateMultipleChoiceTaskSuccessfully() {
         Course course = buildCourse(Status.BUILDING);
