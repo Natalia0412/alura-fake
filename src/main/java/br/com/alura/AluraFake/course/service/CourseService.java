@@ -1,5 +1,7 @@
 package br.com.alura.AluraFake.course.service;
 
+import br.com.alura.AluraFake.course.dto.CoursePublishedDTO;
+import br.com.alura.AluraFake.course.mapper.CourseMapper;
 import br.com.alura.AluraFake.course.repository.CourseRepository;
 import br.com.alura.AluraFake.course.model.Status;
 import br.com.alura.AluraFake.course.model.Course;
@@ -19,14 +21,16 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @Service
 public class CourseService {
+
     private final CourseRepository courseRepository;
     private  final TaskService taskService;
+    private final CourseMapper courseMapper;
 
     public Course findCourseById(Long courseId){
         return courseRepository.findById(courseId).orElseThrow(() -> new ResourceNotFoundException("Curso não encontrado"));
     }
 
-    public Course publishCourse(Long id) {
+    public CoursePublishedDTO publishCourse(Long id) {
         Course course = findCourseById(id);
 
         if (course.getStatus() != Status.BUILDING) {
@@ -39,7 +43,9 @@ public class CourseService {
 
         course.setStatus(Status.PUBLISHED);
         course.setPublishedAt(LocalDateTime.now());
-        return courseRepository.save(course);
+        Course courseSaved = courseRepository.save(course);
+
+        return courseMapper.toCoursePublishedDTO(courseSaved);
 
 
     }

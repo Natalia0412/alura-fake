@@ -1,6 +1,7 @@
 package br.com.alura.AluraFake.course.controller;
 
 import br.com.alura.AluraFake.course.dto.CourseListItemDTO;
+import br.com.alura.AluraFake.course.dto.CoursePublishedDTO;
 import br.com.alura.AluraFake.course.repository.CourseRepository;
 import br.com.alura.AluraFake.course.dto.NewCourseDTO;
 import br.com.alura.AluraFake.course.model.Course;
@@ -60,8 +61,8 @@ public class CourseController {
     }
 
     @PostMapping("/course/{id}/publish")
-    public ResponseEntity<Course> publishCourse(@PathVariable("id") Long id) {
-        Course response = courseService.publishCourse(id);
+    public ResponseEntity<CoursePublishedDTO> publishCourse(@PathVariable("id") Long id) {
+        CoursePublishedDTO response = courseService.publishCourse(id);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
