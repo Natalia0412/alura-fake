@@ -3,7 +3,6 @@ package br.com.alura.AluraFake.task;
 import br.com.alura.AluraFake.course.model.Course;
 import br.com.alura.AluraFake.course.model.Status;
 import br.com.alura.AluraFake.course.repository.CourseRepository;
-import br.com.alura.AluraFake.course.service.CourseService;
 import br.com.alura.AluraFake.task.dto.MultipleChoiceTaskDTO;
 import br.com.alura.AluraFake.task.dto.OpenTextTaskDTO;
 import br.com.alura.AluraFake.task.dto.OptionDTO;
@@ -34,9 +33,6 @@ import static org.mockito.Mockito.*;
 public class TaskServiceTest {
     @InjectMocks
     private TaskService taskService;
-
-    @Mock
-    private CourseService courseService;
 
     @Mock
     private CourseRepository courseRepository;
