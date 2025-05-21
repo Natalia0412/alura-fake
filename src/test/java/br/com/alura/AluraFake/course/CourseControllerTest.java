@@ -21,14 +21,16 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.lang.reflect.Field;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Optional;
 
 import static org.mockito.Mockito.*;
 import static org.springframework.test.util.ReflectionTestUtils.setField;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(CourseController.class)
 class CourseControllerTest {
@@ -46,7 +48,7 @@ class CourseControllerTest {
     private CourseService courseService;
 
     @MockBean
-    private CourseMapper  courseMapper;
+    private CourseMapper courseMapper;
 
     @Test
     void newCourseDTO__should_return_bad_request_when_email_is_invalid() throws Exception {
@@ -138,7 +140,7 @@ class CourseControllerTest {
         LocalDateTime createdAt = LocalDateTime.of(2025, 5, 16, 1, 23, 25);
         LocalDateTime publishedAt = LocalDateTime.of(2025, 5, 20, 21, 45, 50);
 
-        User  instructor = new User("Paulo", "paulo@alua.com.br",  Role.INSTRUCTOR);
+        User instructor = new User("Paulo", "paulo@alua.com.br", Role.INSTRUCTOR);
         setField(instructor, "password", "123456");
 
         Course course = new Course("Java", "Aprenda Java com Alura", instructor);
