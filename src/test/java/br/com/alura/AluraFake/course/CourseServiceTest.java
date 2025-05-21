@@ -1,8 +1,12 @@
 package br.com.alura.AluraFake.course;
-import br.com.alura.AluraFake.task.Task;
-import br.com.alura.AluraFake.task.TaskRepository;
-import br.com.alura.AluraFake.task.Type;
-import br.com.alura.AluraFake.user.User;
+import br.com.alura.AluraFake.course.model.Course;
+import br.com.alura.AluraFake.course.model.Status;
+import br.com.alura.AluraFake.course.repository.CourseRepository;
+import br.com.alura.AluraFake.course.service.CourseService;
+import br.com.alura.AluraFake.task.model.Task;
+import br.com.alura.AluraFake.task.repository.TaskRepository;
+import br.com.alura.AluraFake.task.model.Type;
+import br.com.alura.AluraFake.user.model.User;
 import br.com.alura.AluraFake.util.error.ResourceIllegalStateException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

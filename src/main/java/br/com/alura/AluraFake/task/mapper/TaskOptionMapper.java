@@ -1,6 +1,7 @@
-package br.com.alura.AluraFake.task;
+package br.com.alura.AluraFake.task.mapper;
 
 import br.com.alura.AluraFake.task.dto.OptionDTO;
+import br.com.alura.AluraFake.task.model.TaskOption;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 

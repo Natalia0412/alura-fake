@@ -1,6 +1,13 @@
 package br.com.alura.AluraFake.course;
 
-import br.com.alura.AluraFake.user.*;
+import br.com.alura.AluraFake.course.controller.CourseController;
+import br.com.alura.AluraFake.course.dto.NewCourseDTO;
+import br.com.alura.AluraFake.course.model.Course;
+import br.com.alura.AluraFake.course.repository.CourseRepository;
+import br.com.alura.AluraFake.course.service.CourseService;
+import br.com.alura.AluraFake.user.model.Role;
+import br.com.alura.AluraFake.user.model.User;
+import br.com.alura.AluraFake.user.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -126,4 +133,4 @@ class CourseControllerTest {
         verify(courseService).publishCourse(courseId);
     }
 
-}
+} 

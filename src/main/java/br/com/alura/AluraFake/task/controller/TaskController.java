@@ -1,5 +1,6 @@
-package br.com.alura.AluraFake.task;
+package br.com.alura.AluraFake.task.controller;
 
+import br.com.alura.AluraFake.task.service.TaskService;
 import br.com.alura.AluraFake.task.dto.MultipleChoiceTaskDTO;
 import br.com.alura.AluraFake.task.dto.OpenTextTaskDTO;
 import br.com.alura.AluraFake.task.dto.SingleChoiceTaskDTO;

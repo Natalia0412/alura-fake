@@ -1,6 +1,12 @@
-package br.com.alura.AluraFake.course;
+package br.com.alura.AluraFake.course.controller;
 
-import br.com.alura.AluraFake.user.*;
+import br.com.alura.AluraFake.course.dto.CourseListItemDTO;
+import br.com.alura.AluraFake.course.repository.CourseRepository;
+import br.com.alura.AluraFake.course.dto.NewCourseDTO;
+import br.com.alura.AluraFake.course.model.Course;
+import br.com.alura.AluraFake.course.service.CourseService;
+import br.com.alura.AluraFake.user.model.User;
+import br.com.alura.AluraFake.user.repository.UserRepository;
 import br.com.alura.AluraFake.util.error.ErrorItemDTO;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,9 +60,9 @@ public class CourseController {
     }
 
     @PostMapping("/course/{id}/publish")
-    public ResponseEntity<Void> createCourse(@PathVariable("id") Long id) {
-        courseService.publishCourse(id);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<Course> publishCourse(@PathVariable("id") Long id) {
+        Course response = courseService.publishCourse(id);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
 }
