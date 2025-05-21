@@ -23,7 +23,7 @@ public class Task {
     @Column(nullable = false, length = 255)
     private String statement;
 
-    @Column(nullable = false, name = "`order`") // escapando palavra reservada do MySQL
+    @Column(nullable = false, name = "`order`")
     private Integer order;
 
     @Enumerated(EnumType.STRING)

@@ -24,7 +24,6 @@ public interface TaskMapper {
     Task singleDtoToTask(SingleChoiceTaskDTO dto);
 
     @Mapping(target = "courseId", source = "course.id")
-//    @Mapping(target = "option", source = "text")
     SingleChoiceTaskDTO toSingDto(Task task);
 
     @Mapping(target = "id", ignore = true)
@@ -33,6 +32,5 @@ public interface TaskMapper {
     Task multipleChoiseDtoToTask(MultipleChoiceTaskDTO dto);
 
     @Mapping(target = "courseId", source = "course.id")
-//    @Mapping(target = "option", source = "text")
     MultipleChoiceTaskDTO taskToMultiplechoiceDto(Task task);
 }
